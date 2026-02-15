@@ -12,13 +12,13 @@ export default function TabsLayout() {
         tabBarLabelStyle: {
           fontSize: 13,
           fontWeight: "600",
-          marginTop: 2,
+          marginTop: 4,
         },
         tabBarIconStyle: {
           marginBottom: 0,
         },
         tabBarItemStyle: {
-          paddingTop: 8,
+          paddingTop: 0,
           paddingBottom: 4,
         },
         tabBarStyle: {
@@ -28,7 +28,7 @@ export default function TabsLayout() {
           borderTopRightRadius: 20,
           position: "absolute",
           overflow: "hidden",
-          height: 84,
+          height: 80,
           paddingBottom: 28,
         },
       }}
