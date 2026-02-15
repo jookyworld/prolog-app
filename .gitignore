@@ -1,0 +1,216 @@
+# ==============================
+# Dependencies
+# ==============================
+node_modules/
+.pnp/
+.pnp.js
+.yarn/
+bower_components/
+
+# ==============================
+# Expo / React Native
+# ==============================
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+
+# generated native folders
+/ios
+/android
+
+# Native build artifacts
+.kotlin/
+*.orig.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.hprof
+*.dex
+
+# Metro bundler
+.metro-health-check*
+
+# EAS (Expo Application Services)
+.eas/
+eas.json
+
+# ==============================
+# Environment & Secrets
+# ==============================
+.env
+.env.*
+!.env.example
+*.secret
+*.secrets
+*.credential*
+**/secrets/
+**/credentials/
+
+# ==============================
+# Keys & Certificates
+# ==============================
+*.pem
+*.cert
+*.crt
+*.der
+*.pfx
+*.p7b
+*.keystore
+*.jks
+google-services.json
+GoogleService-Info.plist
+service-account*.json
+firebase*.json
+!firebase.json
+
+# ==============================
+# Auth / Tokens
+# ==============================
+*.token
+*.tokens
+**/token/
+**/tokens/
+oauth*.json
+auth*.json
+
+# ==============================
+# Cloud Provider Configs
+# ==============================
+.aws/
+.azure/
+.gcloud/
+.terraform/
+*.tfstate
+*.tfstate.*
+terraform.tfvars
+
+# ==============================
+# macOS
+# ==============================
+.DS_Store
+._*
+.Spotlight-V100
+.Trashes
+.AppleDouble
+.LSOverride
+.fseventsd
+.TemporaryItems
+.apdisk
+Icon?
+
+# ==============================
+# Windows
+# ==============================
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.lnk
+
+# ==============================
+# Linux
+# ==============================
+*~
+*.swn
+
+# ==============================
+# IDE / Editor
+# ==============================
+.idea/
+.vscode/
+*.code-workspace
+*.swp
+*.swo
+*.sublime-workspace
+*.sublime-project
+.project
+.classpath
+.settings/
+*.launch
+.buildpath
+*.iml
+.history/
+
+# ==============================
+# AI Tools
+# ==============================
+.claude/
+.cursor/
+.copilot/
+.aider*
+.codeium/
+.tabnine/
+.sourcegraph/
+
+# ==============================
+# TypeScript
+# ==============================
+*.tsbuildinfo
+
+# ==============================
+# Debug & Logs
+# ==============================
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+pnpm-debug.*
+logs/
+*.log
+*.log.*
+
+# ==============================
+# Test & Coverage
+# ==============================
+coverage/
+.nyc_output/
+__snapshots__/
+jest-results/
+test-results/
+*.lcov
+
+# ==============================
+# Build & Cache
+# ==============================
+.cache/
+.parcel-cache/
+.next/
+.nuxt/
+.turbo/
+*.tgz
+*.gz
+*.zip
+*.tar
+*.tar.gz
+
+# ==============================
+# Database & Storage
+# ==============================
+*.sqlite
+*.sqlite3
+*.db
+*.db-journal
+*.sql.gz
+*.dump
+
+# ==============================
+# Docker (if used later)
+# ==============================
+docker-compose.override.yml
+.docker/
+
+# ==============================
+# Misc
+# ==============================
+*.tmp
+*.temp
+*.bak
+*.backup
+*.orig
+*.patch
+*.diff
+*.pid
+*.seed
+.sass-cache/
