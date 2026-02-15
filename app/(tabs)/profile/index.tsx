@@ -1,5 +1,6 @@
 import { useAuth } from "@/contexts/auth-context";
 import { COLORS } from "@/lib/constants";
+import { useRouter } from "expo-router";
 import {
   ChevronRight,
   Dumbbell,
@@ -10,7 +11,6 @@ import {
 } from "lucide-react-native";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
 
 export default function ProfileScreen() {
   const { user } = useAuth();
@@ -67,10 +67,7 @@ export default function ProfileScreen() {
                 <Text className="text-xs text-white/40">키</Text>
                 <Text className="text-lg font-bold text-white">
                   {user?.height ?? "-"}
-                  <Text className="text-xs font-normal text-white/40">
-                    {" "}
-                    cm
-                  </Text>
+                  <Text className="text-xs font-normal text-white/40"> cm</Text>
                 </Text>
               </View>
             </View>
@@ -82,10 +79,7 @@ export default function ProfileScreen() {
                 <Text className="text-xs text-white/40">체중</Text>
                 <Text className="text-lg font-bold text-white">
                   {user?.weight ?? "-"}
-                  <Text className="text-xs font-normal text-white/40">
-                    {" "}
-                    kg
-                  </Text>
+                  <Text className="text-xs font-normal text-white/40"> kg</Text>
                 </Text>
               </View>
             </View>
@@ -95,9 +89,7 @@ export default function ProfileScreen() {
         {/* 메뉴 리스트 */}
         <View className="rounded-2xl bg-card">
           <Pressable
-            onPress={() => {
-              // TODO: 운동 기록 보관함 화면 연결
-            }}
+            onPress={() => router.push("/(tabs)/profile/history")}
             className="flex-row items-center px-5 py-4"
           >
             <View className="h-10 w-10 items-center justify-center rounded-xl bg-white/5">
@@ -110,17 +102,6 @@ export default function ProfileScreen() {
           </Pressable>
 
           <View className="mx-5 h-px bg-white/5" />
-
-          <Pressable
-            onPress={() => router.push("/(tabs)/profile/settings")}
-            className="flex-row items-center px-5 py-4"
-          >
-            <View className="h-10 w-10 items-center justify-center rounded-xl bg-white/5">
-              <Settings size={18} color={COLORS.white} />
-            </View>
-            <Text className="ml-3 flex-1 text-base text-white">설정</Text>
-            <ChevronRight size={18} color="rgba(255,255,255,0.3)" />
-          </Pressable>
         </View>
       </ScrollView>
     </SafeAreaView>
