@@ -1,7 +1,7 @@
 import { routineApi } from "@/lib/api/routine";
 import { COLORS } from "@/lib/constants";
 import type { RoutineDetail } from "@/lib/types/routine";
-import { ArrowLeft, Clock, Layers, Trash2 } from "lucide-react-native";
+import { ArrowLeft, Clock, Layers, Play, Trash2 } from "lucide-react-native";
 import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -185,8 +185,18 @@ export default function RoutineDetailScreen() {
         </View>
       </ScrollView>
 
-      {/* 하단 삭제 버튼 */}
-      <View className="px-5 pb-8 pt-2">
+      {/* 하단 버튼 */}
+      <View className="gap-3 px-5 pb-8 pt-2">
+        <Pressable
+          onPress={() =>
+            router.push(`/(tabs)/workout/session?routineId=${id}`)
+          }
+          className="flex-row items-center justify-center gap-2 rounded-2xl bg-primary py-4 active:opacity-80"
+        >
+          <Play size={18} color={COLORS.white} />
+          <Text className="text-base font-semibold text-white">운동 시작</Text>
+        </Pressable>
+
         <Pressable
           onPress={handleDelete}
           disabled={deleting}

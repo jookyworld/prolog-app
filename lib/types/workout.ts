@@ -38,6 +38,49 @@ export interface WorkoutSessionDetailRes {
   exercises: WorkoutExerciseRes[];
 }
 
+// --- Session API types ---
+
+export interface WorkoutSessionStartReq {
+  routineId: number;
+}
+
+export interface WorkoutSessionStartRes {
+  id: number;
+  routineId: number;
+  routineTitle: string;
+  startedAt: string;
+  completedAt: string | null;
+}
+
+export interface WorkoutSetCompleteReq {
+  exerciseId: number;
+  setNumber: number;
+  weight: number;
+  reps: number;
+}
+
+export interface WorkoutSessionCompleteReq {
+  action: "RECORD_ONLY";
+  sets: WorkoutSetCompleteReq[];
+}
+
+// --- Active workout state types ---
+
+export interface ActiveSet {
+  id: string;
+  setNumber: number;
+  weight: string;
+  reps: string;
+  completed: boolean;
+}
+
+export interface ActiveExercise {
+  id: string;
+  exerciseId: number;
+  name: string;
+  sets: ActiveSet[];
+}
+
 // --- App-level types ---
 
 export interface WorkoutSession {

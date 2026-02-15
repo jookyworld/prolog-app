@@ -1,7 +1,9 @@
 import { apiFetch } from "../api";
 import type {
   PageWorkoutSessionListItemRes,
+  WorkoutSessionCompleteReq,
   WorkoutSessionDetailRes,
+  WorkoutSessionStartRes,
 } from "../types/workout";
 
 export const workoutApi = {
@@ -11,5 +13,28 @@ export const workoutApi = {
 
   getSessionDetail(id: string): Promise<WorkoutSessionDetailRes> {
     return apiFetch(`/api/workouts/sessions/${id}`);
+  },
+
+  startSession(routineId: number): Promise<WorkoutSessionStartRes> {
+    return apiFetch("/api/workouts/sessions", {
+      method: "POST",
+      body: JSON.stringify({ routineId }),
+    });
+  },
+
+  completeSession(
+    sessionId: number,
+    body: WorkoutSessionCompleteReq,
+  ): Promise<void> {
+    return apiFetch(`/api/workouts/sessions/${sessionId}/complete`, {
+      method: "PATCH",
+      body: JSON.stringify(body),
+    });
+  },
+
+  cancelSession(sessionId: number): Promise<void> {
+    return apiFetch(`/api/workouts/sessions/${sessionId}/cancel`, {
+      method: "DELETE",
+    });
   },
 };
