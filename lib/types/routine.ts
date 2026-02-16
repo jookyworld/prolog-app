@@ -21,3 +21,15 @@ export interface RoutineListItem {
 export interface RoutineDetail extends RoutineListItem {
   routineItems: RoutineItemRes[];
 }
+
+export interface RoutineItemCreateRequest {
+  exerciseId: number;
+  sets: number;
+  restSeconds: number;
+}
+
+export interface RoutineCreateRequest {
+  title: string;
+  description: string;
+  routineItems: RoutineItemCreateRequest[];
+}

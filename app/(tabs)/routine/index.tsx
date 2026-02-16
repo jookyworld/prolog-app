@@ -3,7 +3,8 @@ import { COLORS } from "@/lib/constants";
 import { formatDate } from "@/lib/format";
 import type { RoutineListItem } from "@/lib/types/routine";
 import { ClipboardList, Plus } from "lucide-react-native";
-import { useCallback, useEffect, useState } from "react";
+import { useFocusEffect } from "expo-router";
+import { useCallback, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -35,9 +36,11 @@ export default function RoutineScreen() {
     }
   }, []);
 
-  useEffect(() => {
-    fetchRoutines();
-  }, [fetchRoutines]);
+  useFocusEffect(
+    useCallback(() => {
+      fetchRoutines();
+    }, [fetchRoutines]),
+  );
 
   return (
     <SafeAreaView className="flex-1 bg-background" edges={["top"]}>
@@ -45,7 +48,7 @@ export default function RoutineScreen() {
       <View className="flex-row items-center justify-between px-5 py-4">
         <Text className="text-2xl font-bold text-white">루틴</Text>
         <Pressable
-          onPress={() => {}}
+          onPress={() => router.push("/(tabs)/routine/new")}
           className="h-10 w-10 items-center justify-center rounded-xl bg-white/5"
         >
           <Plus size={20} color={COLORS.white} />

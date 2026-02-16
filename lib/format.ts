@@ -29,6 +29,18 @@ export function formatRelativeDate(dateString: string): string {
 }
 
 /**
+ * 초를 "N분 N초" 형식으로 변환 (루틴 휴식시간용)
+ */
+export function formatRestTime(seconds: number): string {
+  if (seconds === 0) return "0초";
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  if (m > 0 && s > 0) return `${m}분 ${s}초`;
+  if (m > 0) return `${m}분`;
+  return `${s}초`;
+}
+
+/**
  * 초를 "HH:MM:SS" 형식으로 변환
  */
 export function formatElapsedTime(seconds: number): string {

@@ -8,6 +8,11 @@ export default function RoutineLayout() {
         headerShown: false,
         contentStyle: { backgroundColor: COLORS.background },
       }}
-    />
+    >
+      <Stack.Screen name="index" />
+      <Stack.Screen name="[id]" />
+      <Stack.Screen name="new" />
+      <Stack.Screen name="select-exercises" />
+    </Stack>
   );
 }

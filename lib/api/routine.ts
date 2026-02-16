@@ -1,5 +1,9 @@
 import { apiFetch } from "../api";
-import type { RoutineDetail, RoutineListItem } from "../types/routine";
+import type {
+  RoutineCreateRequest,
+  RoutineDetail,
+  RoutineListItem,
+} from "../types/routine";
 
 export const routineApi = {
   getRoutines(): Promise<RoutineListItem[]> {
@@ -8,6 +12,13 @@ export const routineApi = {
 
   getRoutineDetail(id: number): Promise<RoutineDetail> {
     return apiFetch(`/api/routines/${id}`);
+  },
+
+  createRoutine(req: RoutineCreateRequest): Promise<RoutineDetail> {
+    return apiFetch("/api/routines", {
+      method: "POST",
+      body: JSON.stringify(req),
+    });
   },
 
   deleteRoutine(id: number): Promise<void> {
