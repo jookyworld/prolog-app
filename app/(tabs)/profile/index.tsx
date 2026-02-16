@@ -98,7 +98,7 @@ export default function ProfileScreen() {
             <Text className="ml-3 flex-1 text-base text-white">
               운동 기록 보관함
             </Text>
-            <ChevronRight size={18} color="rgba(255,255,255,0.3)" />
+            <ChevronRight size={18} color={COLORS.iconMuted} />
           </Pressable>
 
           <View className="mx-5 h-px bg-white/5" />

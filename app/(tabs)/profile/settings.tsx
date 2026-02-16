@@ -10,8 +10,12 @@ export default function SettingsScreen() {
   const router = useRouter();
 
   const handleLogout = async () => {
-    await logout();
-    router.replace("/(auth)/login");
+    try {
+      await logout();
+      router.replace("/(auth)/login");
+    } catch {
+      Alert.alert("오류", "로그아웃에 실패했습니다. 다시 시도해주세요.");
+    }
   };
 
   const handleDeleteAccount = () => {
@@ -24,8 +28,12 @@ export default function SettingsScreen() {
           text: "탈퇴",
           style: "destructive",
           onPress: async () => {
-            await deleteAccount();
-            router.replace("/(auth)/login");
+            try {
+              await deleteAccount();
+              router.replace("/(auth)/login");
+            } catch {
+              Alert.alert("오류", "회원 탈퇴에 실패했습니다. 다시 시도해주세요.");
+            }
           },
         },
       ],

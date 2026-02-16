@@ -1,6 +1,7 @@
 import { routineApi } from "@/lib/api/routine";
 import { workoutApi } from "@/lib/api/workout";
 import { COLORS } from "@/lib/constants";
+import { formatElapsedTime } from "@/lib/format";
 import type { ActiveExercise, ActiveSet } from "@/lib/types/workout";
 import {
   Check,
@@ -23,18 +24,6 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 
-let setIdCounter = 0;
-function nextSetId() {
-  return `set-${++setIdCounter}`;
-}
-
-function formatTime(seconds: number): string {
-  const h = Math.floor(seconds / 3600);
-  const m = Math.floor((seconds % 3600) / 60);
-  const s = seconds % 60;
-  return [h, m, s].map((v) => String(v).padStart(2, "0")).join(":");
-}
-
 export default function WorkoutSessionScreen() {
   const router = useRouter();
   const { routineId } = useLocalSearchParams<{ routineId: string }>();
@@ -47,6 +36,11 @@ export default function WorkoutSessionScreen() {
   const [loading, setLoading] = useState(true);
   const [completing, setCompleting] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const setIdCounter = useRef(0);
+
+  const nextSetId = useCallback(() => {
+    return `set-${++setIdCounter.current}`;
+  }, []);
 
   // Initialize session
   useEffect(() => {
@@ -190,8 +184,13 @@ export default function WorkoutSessionScreen() {
                 sets: completedSets,
               });
               router.back();
-            } catch {
-              Alert.alert("오류", "운동 완료 처리에 실패했습니다.");
+            } catch (err) {
+              Alert.alert(
+                "오류",
+                err instanceof Error
+                  ? err.message
+                  : "운동 완료 처리에 실패했습니다.",
+              );
             } finally {
               setCompleting(false);
             }
@@ -321,7 +320,7 @@ export default function WorkoutSessionScreen() {
                   <TextInput
                     className="rounded-lg bg-white/5 px-3 py-2.5 text-center text-sm text-white"
                     placeholder="0"
-                    placeholderTextColor="rgba(255,255,255,0.2)"
+                    placeholderTextColor={COLORS.placeholder}
                     keyboardType="numeric"
                     value={set.weight}
                     onChangeText={(v) =>
@@ -333,7 +332,7 @@ export default function WorkoutSessionScreen() {
                   <TextInput
                     className="rounded-lg bg-white/5 px-3 py-2.5 text-center text-sm text-white"
                     placeholder="0"
-                    placeholderTextColor="rgba(255,255,255,0.2)"
+                    placeholderTextColor={COLORS.placeholder}
                     keyboardType="numeric"
                     value={set.reps}
                     onChangeText={(v) =>
@@ -353,7 +352,7 @@ export default function WorkoutSessionScreen() {
                 >
                   <Check
                     size={16}
-                    color={set.completed ? COLORS.white : "rgba(255,255,255,0.3)"}
+                    color={set.completed ? COLORS.white : COLORS.iconMuted}
                   />
                 </Pressable>
               </View>
@@ -397,7 +396,7 @@ export default function WorkoutSessionScreen() {
       <View className="flex-row items-center justify-center gap-2 border-t border-white/10 px-5 py-3">
         <Clock size={16} color={COLORS.mutedForeground} />
         <Text className="text-base font-mono font-semibold text-white/60">
-          {formatTime(elapsedTime)}
+          {formatElapsedTime(elapsedTime)}
         </Text>
       </View>
     </SafeAreaView>

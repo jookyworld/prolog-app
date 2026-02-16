@@ -1,5 +1,6 @@
 import { workoutApi } from "@/lib/api/workout";
 import { COLORS } from "@/lib/constants";
+import { formatRelativeDate } from "@/lib/format";
 import {
   WorkoutSession,
   toWorkoutSession,
@@ -23,22 +24,6 @@ const TYPE_FILTERS: { value: TypeFilter; label: string }[] = [
   { value: "routine", label: "루틴" },
   { value: "free", label: "자유 운동" },
 ];
-
-function formatRelativeDate(dateString: string): string {
-  const date = new Date(dateString);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-
-  if (diffDays === 0) return "오늘";
-  if (diffDays === 1) return "어제";
-  if (diffDays < 7) return `${diffDays}일 전`;
-
-  return date.toLocaleDateString("ko-KR", {
-    month: "long",
-    day: "numeric",
-  });
-}
 
 export default function WorkoutHistoryScreen() {
   const router = useRouter();

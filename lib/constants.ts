@@ -9,6 +9,9 @@ export const COLORS = {
   primaryHover: "#2272EB",
   border: "rgba(255,255,255,0.1)",
   mutedForeground: "rgba(255,255,255,0.6)",
+  tabInactive: "rgba(255,255,255,0.35)",
+  iconMuted: "rgba(255,255,255,0.3)",
+  placeholder: "rgba(255,255,255,0.2)",
   destructive: "#EF4444",
   white: "#FFFFFF",
 } as const;

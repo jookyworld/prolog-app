@@ -1,5 +1,6 @@
 import { workoutApi } from "@/lib/api/workout";
 import { COLORS } from "@/lib/constants";
+import { formatDate, formatElapsedTime } from "@/lib/format";
 import {
   WorkoutSessionDetail,
   toWorkoutSessionDetail,
@@ -9,21 +10,6 @@ import { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
-
-function formatElapsedTime(seconds: number): string {
-  const h = Math.floor(seconds / 3600);
-  const m = Math.floor((seconds % 3600) / 60);
-  const s = seconds % 60;
-  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
-}
-
-function formatDate(dateString: string): string {
-  return new Date(dateString).toLocaleDateString("ko-KR", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
-}
 
 export default function WorkoutHistoryDetailScreen() {
   const router = useRouter();

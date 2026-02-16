@@ -76,14 +76,11 @@ export async function apiFetch<T>(
   };
 
   const url = `${API_URL}${path}`;
-  console.log(`[API] ${options?.method ?? "GET"} ${url}`, options?.body);
 
   const res = await fetch(url, {
     ...options,
     headers,
   });
-
-  console.log(`[API] Response: ${res.status} ${res.statusText}`);
 
   if (
     res.status === 401 &&

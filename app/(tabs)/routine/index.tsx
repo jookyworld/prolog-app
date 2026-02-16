@@ -1,5 +1,6 @@
 import { routineApi } from "@/lib/api/routine";
 import { COLORS } from "@/lib/constants";
+import { formatDate } from "@/lib/format";
 import type { RoutineListItem } from "@/lib/types/routine";
 import { ClipboardList, Plus } from "lucide-react-native";
 import { useCallback, useEffect, useState } from "react";
@@ -12,14 +13,6 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
-
-function formatDate(dateString: string): string {
-  return new Date(dateString).toLocaleDateString("ko-KR", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
-}
 
 export default function RoutineScreen() {
   const router = useRouter();
