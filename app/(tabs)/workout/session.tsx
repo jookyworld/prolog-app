@@ -2,6 +2,7 @@ import { routineApi } from "@/lib/api/routine";
 import { workoutApi } from "@/lib/api/workout";
 import { COLORS } from "@/lib/constants";
 import { formatElapsedTime } from "@/lib/format";
+import { useWorkout } from "@/contexts/workout-context";
 import type { ActiveExercise, ActiveSet } from "@/lib/types/workout";
 import {
   Check,
@@ -27,6 +28,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 export default function WorkoutSessionScreen() {
   const router = useRouter();
   const { routineId } = useLocalSearchParams<{ routineId: string }>();
+  const { activeSession, startWorkout, endWorkout } = useWorkout();
 
   const [exercises, setExercises] = useState<ActiveExercise[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -37,6 +39,7 @@ export default function WorkoutSessionScreen() {
   const [completing, setCompleting] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const setIdCounter = useRef(0);
+  const initRef = useRef(false);
 
   const nextSetId = useCallback(() => {
     return `set-${++setIdCounter.current}`;
@@ -44,36 +47,68 @@ export default function WorkoutSessionScreen() {
 
   // Initialize session
   useEffect(() => {
-    if (!routineId) return;
+    if (!routineId || initRef.current) return;
+    initRef.current = true;
 
     const init = async () => {
       try {
-        const [routine, session] = await Promise.all([
-          routineApi.getRoutineDetail(Number(routineId)),
-          workoutApi.startSession(Number(routineId)),
-        ]);
+        // If resuming an active session, use its sessionId
+        if (
+          activeSession &&
+          activeSession.routineId === Number(routineId)
+        ) {
+          const routine = await routineApi.getRoutineDetail(Number(routineId));
+          setRoutineTitle(routine.title);
+          setSessionId(activeSession.sessionId);
 
-        setRoutineTitle(routine.title);
-        setSessionId(session.id);
+          const sorted = [...routine.routineItems].sort(
+            (a, b) => a.orderInRoutine - b.orderInRoutine,
+          );
 
-        const sorted = [...routine.routineItems].sort(
-          (a, b) => a.orderInRoutine - b.orderInRoutine,
-        );
+          const activeExercises: ActiveExercise[] = sorted.map((item) => ({
+            id: String(item.routineItemId),
+            exerciseId: item.exerciseId,
+            name: item.exerciseName,
+            sets: Array.from({ length: item.sets }, (_, i) => ({
+              id: nextSetId(),
+              setNumber: i + 1,
+              weight: "",
+              reps: "",
+              completed: false,
+            })),
+          }));
 
-        const activeExercises: ActiveExercise[] = sorted.map((item) => ({
-          id: String(item.routineItemId),
-          exerciseId: item.exerciseId,
-          name: item.exerciseName,
-          sets: Array.from({ length: item.sets }, (_, i) => ({
-            id: nextSetId(),
-            setNumber: i + 1,
-            weight: "",
-            reps: "",
-            completed: false,
-          })),
-        }));
+          setExercises(activeExercises);
+        } else {
+          // New session
+          const [routine, session] = await Promise.all([
+            routineApi.getRoutineDetail(Number(routineId)),
+            workoutApi.startSession(Number(routineId)),
+          ]);
 
-        setExercises(activeExercises);
+          setRoutineTitle(routine.title);
+          setSessionId(session.id);
+          startWorkout(session.id, Number(routineId));
+
+          const sorted = [...routine.routineItems].sort(
+            (a, b) => a.orderInRoutine - b.orderInRoutine,
+          );
+
+          const activeExercises: ActiveExercise[] = sorted.map((item) => ({
+            id: String(item.routineItemId),
+            exerciseId: item.exerciseId,
+            name: item.exerciseName,
+            sets: Array.from({ length: item.sets }, (_, i) => ({
+              id: nextSetId(),
+              setNumber: i + 1,
+              weight: "",
+              reps: "",
+              completed: false,
+            })),
+          }));
+
+          setExercises(activeExercises);
+        }
       } catch (err) {
         Alert.alert(
           "오류",
@@ -86,7 +121,7 @@ export default function WorkoutSessionScreen() {
     };
 
     init();
-  }, [routineId, router]);
+  }, [routineId, router, activeSession, startWorkout, nextSetId]);
 
   // Timer
   useEffect(() => {
@@ -183,6 +218,7 @@ export default function WorkoutSessionScreen() {
                 action: "RECORD_ONLY",
                 sets: completedSets,
               });
+              endWorkout();
               router.back();
             } catch (err) {
               Alert.alert(
@@ -211,9 +247,10 @@ export default function WorkoutSessionScreen() {
             try {
               await workoutApi.cancelSession(sessionId);
             } catch {
-              // ignore cancel error
+              // 취소 실패해도 로컬 상태는 정리
             }
           }
+          endWorkout();
           router.back();
         },
       },
