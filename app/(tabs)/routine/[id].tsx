@@ -1,7 +1,15 @@
 import { routineApi } from "@/lib/api/routine";
 import { COLORS } from "@/lib/constants";
 import type { RoutineDetail } from "@/lib/types/routine";
-import { ArrowLeft, Clock, Layers, Play, Trash2 } from "lucide-react-native";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import {
+  ArrowLeft,
+  Clock,
+  EllipsisVertical,
+  Layers,
+  Play,
+  RotateCcw,
+} from "lucide-react-native";
 import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -11,17 +19,24 @@ import {
   Text,
   View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
+
+const TAB_BAR_HEIGHT = 50;
 
 export default function RoutineDetailScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
 
   const [routine, setRoutine] = useState<RoutineDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [deleting, setDeleting] = useState(false);
+  const [actionLoading, setActionLoading] = useState(false);
+
+  const bottomPadding = TAB_BAR_HEIGHT + insets.bottom + 16;
 
   const fetchDetail = useCallback(async () => {
     if (!id) return;
@@ -50,18 +65,74 @@ export default function RoutineDetailScreen() {
         text: "삭제",
         style: "destructive",
         onPress: async () => {
-          setDeleting(true);
+          setActionLoading(true);
           try {
             await routineApi.deleteRoutine(Number(id));
             router.back();
           } catch {
             Alert.alert("오류", "삭제에 실패했습니다.");
           } finally {
-            setDeleting(false);
+            setActionLoading(false);
           }
         },
       },
     ]);
+  };
+
+  const handleArchive = async () => {
+    setActionLoading(true);
+    try {
+      await routineApi.archiveRoutine(Number(id));
+      router.back();
+    } catch {
+      Alert.alert("오류", "보관에 실패했습니다.");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleActivate = async () => {
+    setActionLoading(true);
+    try {
+      await routineApi.activateRoutine(Number(id));
+      router.back();
+    } catch {
+      Alert.alert("오류", "활성화에 실패했습니다.");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleSettingsMenu = () => {
+    if (!routine) return;
+
+    const buttons: Array<{
+      text: string;
+      style?: "cancel" | "destructive";
+      onPress?: () => void;
+    }> = [{ text: "취소", style: "cancel" }];
+
+    if (routine.active) {
+      buttons.push({ text: "보관하기", onPress: handleArchive });
+    } else {
+      buttons.push({ text: "다시 활성화", onPress: handleActivate });
+    }
+
+    buttons.push({
+      text: "루틴 수정",
+      onPress: () => {
+        // TODO: 루틴 수정 기능 구현 예정
+        Alert.alert("준비 중", "루틴 수정 기능은 준비 중입니다.");
+      },
+    });
+
+    buttons.push({
+      text: "루틴 삭제",
+      style: "destructive",
+      onPress: handleDelete,
+    });
+
+    Alert.alert(undefined as unknown as string, undefined, buttons);
   };
 
   if (loading) {
@@ -107,14 +178,22 @@ export default function RoutineDetailScreen() {
   return (
     <SafeAreaView className="flex-1 bg-background" edges={["top"]}>
       {/* 헤더 */}
-      <View className="flex-row items-center px-5 py-4">
+      <View className="flex-row items-center justify-between px-5 py-4">
+        <View className="flex-row items-center">
+          <Pressable
+            onPress={() => router.back()}
+            className="mr-3 h-10 w-10 items-center justify-center rounded-xl bg-white/5"
+          >
+            <ArrowLeft size={20} color={COLORS.white} />
+          </Pressable>
+          <Text className="text-2xl font-bold text-white">루틴 상세</Text>
+        </View>
         <Pressable
-          onPress={() => router.back()}
-          className="mr-3 h-10 w-10 items-center justify-center rounded-xl bg-white/5"
+          onPress={handleSettingsMenu}
+          className="h-10 w-10 items-center justify-center rounded-xl bg-white/5"
         >
-          <ArrowLeft size={20} color={COLORS.white} />
+          <EllipsisVertical size={20} color={COLORS.white} />
         </Pressable>
-        <Text className="text-2xl font-bold text-white">루틴 상세</Text>
       </View>
 
       <ScrollView className="flex-1 px-5" showsVerticalScrollIndicator={false}>
@@ -124,9 +203,15 @@ export default function RoutineDetailScreen() {
             <Text className="flex-1 text-xl font-bold text-white">
               {routine.title}
             </Text>
-            {routine.active && (
+            {routine.active ? (
               <View className="rounded-md bg-primary/15 px-2.5 py-1">
                 <Text className="text-xs font-medium text-primary">활성</Text>
+              </View>
+            ) : (
+              <View className="rounded-md bg-white/10 px-2.5 py-1">
+                <Text className="text-xs font-medium text-white/50">
+                  보관됨
+                </Text>
               </View>
             )}
           </View>
@@ -142,7 +227,7 @@ export default function RoutineDetailScreen() {
           운동 구성 ({sortedItems.length}개)
         </Text>
 
-        <View className="gap-3 pb-8">
+        <View className="gap-3" style={{ paddingBottom: bottomPadding + 60 }}>
           {sortedItems.map((item, idx) => (
             <View key={item.routineItemId} className="rounded-2xl bg-card p-5">
               <View className="mb-3 flex-row items-center gap-3">
@@ -167,9 +252,7 @@ export default function RoutineDetailScreen() {
                   <View className="h-7 w-7 items-center justify-center rounded-md bg-white/5">
                     <Layers size={14} color={COLORS.mutedForeground} />
                   </View>
-                  <Text className="text-sm text-white/60">
-                    {item.sets}세트
-                  </Text>
+                  <Text className="text-sm text-white/60">{item.sets}세트</Text>
                 </View>
                 <View className="flex-row items-center gap-1.5">
                   <View className="h-7 w-7 items-center justify-center rounded-md bg-white/5">
@@ -186,31 +269,38 @@ export default function RoutineDetailScreen() {
       </ScrollView>
 
       {/* 하단 버튼 */}
-      <View className="gap-3 px-5 pb-8 pt-2">
-        <Pressable
-          onPress={() =>
-            router.push(`/(tabs)/workout/session?routineId=${id}`)
-          }
-          className="flex-row items-center justify-center gap-2 rounded-2xl bg-primary py-4 active:opacity-80"
-        >
-          <Play size={18} color={COLORS.white} />
-          <Text className="text-base font-semibold text-white">운동 시작</Text>
-        </Pressable>
-
-        <Pressable
-          onPress={handleDelete}
-          disabled={deleting}
-          className="flex-row items-center justify-center gap-2 rounded-2xl bg-destructive/10 py-4 active:opacity-80"
-        >
-          {deleting ? (
-            <ActivityIndicator size="small" color={COLORS.destructive} />
-          ) : (
-            <Trash2 size={18} color={COLORS.destructive} />
-          )}
-          <Text className="text-base font-semibold text-destructive">
-            {deleting ? "삭제 중..." : "루틴 삭제"}
-          </Text>
-        </Pressable>
+      <View
+        className="absolute bottom-0 left-0 right-0 px-5 pt-2"
+        style={{ paddingBottom: bottomPadding }}
+      >
+        {routine.active ? (
+          <Pressable
+            onPress={() =>
+              router.push(`/(tabs)/workout/session?routineId=${id}`)
+            }
+            className="flex-row items-center justify-center gap-2 rounded-2xl bg-primary py-4 active:opacity-80"
+          >
+            <Play size={18} color={COLORS.white} />
+            <Text className="text-base font-semibold text-white">
+              운동 시작
+            </Text>
+          </Pressable>
+        ) : (
+          <Pressable
+            onPress={handleActivate}
+            disabled={actionLoading}
+            className="flex-row items-center justify-center gap-2 rounded-2xl bg-primary py-4 active:opacity-80"
+          >
+            {actionLoading ? (
+              <ActivityIndicator size="small" color={COLORS.white} />
+            ) : (
+              <RotateCcw size={18} color={COLORS.white} />
+            )}
+            <Text className="text-base font-semibold text-white">
+              {actionLoading ? "처리 중..." : "다시 활성화"}
+            </Text>
+          </Pressable>
+        )}
       </View>
     </SafeAreaView>
   );

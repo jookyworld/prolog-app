@@ -6,8 +6,9 @@ import type {
 } from "../types/routine";
 
 export const routineApi = {
-  getRoutines(): Promise<RoutineListItem[]> {
-    return apiFetch("/api/routines");
+  getRoutines(status?: "ACTIVE" | "ARCHIVED" | "ALL"): Promise<RoutineListItem[]> {
+    const params = status ? `?status=${status}` : "";
+    return apiFetch(`/api/routines${params}`);
   },
 
   getRoutineDetail(id: number): Promise<RoutineDetail> {
@@ -23,5 +24,13 @@ export const routineApi = {
 
   deleteRoutine(id: number): Promise<void> {
     return apiFetch(`/api/routines/${id}`, { method: "DELETE" });
+  },
+
+  archiveRoutine(id: number): Promise<void> {
+    return apiFetch(`/api/routines/${id}/archive`, { method: "PATCH" });
+  },
+
+  activateRoutine(id: number): Promise<void> {
+    return apiFetch(`/api/routines/${id}/activate`, { method: "PATCH" });
   },
 };
