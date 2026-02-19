@@ -20,6 +20,7 @@ interface AuthContextValue {
   signup: (data: SignupRequest) => Promise<void>;
   logout: () => Promise<void>;
   deleteAccount: () => Promise<void>;
+  updateUser: (updated: UserResponse) => void;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -72,9 +73,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(null);
   }, []);
 
+  const updateUser = useCallback((updated: UserResponse) => {
+    setUser(updated);
+  }, []);
+
   return (
     <AuthContext.Provider
-      value={{ user, isLoading, login, signup, logout, deleteAccount }}
+      value={{ user, isLoading, login, signup, logout, deleteAccount, updateUser }}
     >
       {children}
     </AuthContext.Provider>

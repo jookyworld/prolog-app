@@ -4,6 +4,7 @@ import { useRouter } from "expo-router";
 import {
   ChevronRight,
   Dumbbell,
+  Pencil,
   Ruler,
   Settings,
   User,
@@ -16,7 +17,12 @@ export default function ProfileScreen() {
   const { user } = useAuth();
   const router = useRouter();
 
-  const genderLabel = user?.gender === "MALE" ? "남성" : "여성";
+  const genderLabel =
+    user?.gender === "MALE"
+      ? "남성"
+      : user?.gender === "FEMALE"
+        ? "여성"
+        : "미설정";
 
   return (
     <SafeAreaView className="flex-1 bg-background" edges={["top"]}>
@@ -52,6 +58,12 @@ export default function ProfileScreen() {
               </View>
               <Text className="mt-1 text-sm text-white/50">{user?.email}</Text>
             </View>
+            <Pressable
+              onPress={() => router.push("/(tabs)/profile/edit")}
+              className="rounded-xl bg-white/5 p-2.5"
+            >
+              <Pencil size={16} color={COLORS.mutedForeground} />
+            </Pressable>
           </View>
 
           {/* 구분선 */}

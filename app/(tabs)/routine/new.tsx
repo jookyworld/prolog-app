@@ -14,7 +14,8 @@ import {
   Plus,
   Trash2,
 } from "lucide-react-native";
-import { useCallback, useState } from "react";
+import type { BodyPart } from "@/lib/types/exercise";
+import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -25,7 +26,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useFocusEffect, useRouter } from "expo-router";
+import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 
 interface RoutineItem {
   exercise: ExerciseResponse;
@@ -35,10 +36,47 @@ interface RoutineItem {
 
 export default function NewRoutineScreen() {
   const router = useRouter();
+  const { routineId } = useLocalSearchParams<{ routineId?: string }>();
+  const isEditMode = !!routineId;
+
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [items, setItems] = useState<RoutineItem[]>([]);
   const [saving, setSaving] = useState(false);
+  const [loadingRoutine, setLoadingRoutine] = useState(false);
+
+  // 수정 모드: 기존 루틴 데이터 로드
+  useEffect(() => {
+    if (!routineId) return;
+    setLoadingRoutine(true);
+    routineApi
+      .getRoutineDetail(Number(routineId))
+      .then((data) => {
+        setTitle(data.title);
+        setDescription(data.description ?? "");
+        const sorted = [...data.routineItems].sort(
+          (a, b) => a.orderInRoutine - b.orderInRoutine,
+        );
+        setItems(
+          sorted.map((item) => ({
+            exercise: {
+              id: item.exerciseId,
+              name: item.exerciseName,
+              bodyPart: item.bodyPart as BodyPart,
+              partDetail: item.partDetail,
+              custom: false,
+            },
+            sets: item.sets,
+            restSeconds: item.restSeconds,
+          })),
+        );
+      })
+      .catch(() => {
+        Alert.alert("오류", "루틴 데이터를 불러오지 못했습니다.");
+        router.back();
+      })
+      .finally(() => setLoadingRoutine(false));
+  }, [routineId]);
 
   useFocusEffect(
     useCallback(() => {
@@ -61,16 +99,21 @@ export default function NewRoutineScreen() {
   const handleSave = async () => {
     if (!canSave) return;
     setSaving(true);
+    const req = {
+      title: title.trim(),
+      description: description.trim(),
+      routineItems: items.map((item) => ({
+        exerciseId: item.exercise.id,
+        sets: item.sets,
+        restSeconds: item.restSeconds,
+      })),
+    };
     try {
-      await routineApi.createRoutine({
-        title: title.trim(),
-        description: description.trim(),
-        routineItems: items.map((item) => ({
-          exerciseId: item.exercise.id,
-          sets: item.sets,
-          restSeconds: item.restSeconds,
-        })),
-      });
+      if (isEditMode) {
+        await routineApi.updateRoutine(Number(routineId), req);
+      } else {
+        await routineApi.createRoutine(req);
+      }
       router.back();
     } catch {
       Alert.alert("오류", "루틴 저장에 실패했습니다.");
@@ -99,6 +142,15 @@ export default function NewRoutineScreen() {
     });
   };
 
+  if (loadingRoutine) {
+    return (
+      <SafeAreaView className="flex-1 items-center justify-center bg-background">
+        <ActivityIndicator size="small" color={COLORS.primary} />
+        <Text className="mt-3 text-sm text-white/50">불러오는 중...</Text>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView className="flex-1 bg-background" edges={["top"]}>
       {/* 헤더 */}
@@ -110,7 +162,7 @@ export default function NewRoutineScreen() {
           >
             <ArrowLeft size={20} color={COLORS.white} />
           </Pressable>
-          <Text className="text-2xl font-bold text-white">루틴 만들기</Text>
+          <Text className="text-2xl font-bold text-white">{isEditMode ? "루틴 수정" : "루틴 만들기"}</Text>
         </View>
         <Pressable
           onPress={handleSave}

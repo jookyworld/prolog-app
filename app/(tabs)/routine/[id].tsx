@@ -1,7 +1,7 @@
 import { routineApi } from "@/lib/api/routine";
 import { COLORS } from "@/lib/constants";
 import type { RoutineDetail } from "@/lib/types/routine";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import {
   ArrowLeft,
   Clock,
@@ -10,7 +10,7 @@ import {
   Play,
   RotateCcw,
 } from "lucide-react-native";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -54,9 +54,11 @@ export default function RoutineDetailScreen() {
     }
   }, [id]);
 
-  useEffect(() => {
-    fetchDetail();
-  }, [fetchDetail]);
+  useFocusEffect(
+    useCallback(() => {
+      fetchDetail();
+    }, [fetchDetail]),
+  );
 
   const handleDelete = () => {
     Alert.alert("루틴 삭제", "이 루틴을 삭제하시겠습니까?", [
@@ -121,8 +123,7 @@ export default function RoutineDetailScreen() {
     buttons.push({
       text: "루틴 수정",
       onPress: () => {
-        // TODO: 루틴 수정 기능 구현 예정
-        Alert.alert("준비 중", "루틴 수정 기능은 준비 중입니다.");
+        router.push(`/(tabs)/routine/new?routineId=${id}`);
       },
     });
 

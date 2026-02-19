@@ -3,7 +3,12 @@ import { workoutApi } from "@/lib/api/workout";
 import { COLORS } from "@/lib/constants";
 import { formatElapsedTime } from "@/lib/format";
 import { useWorkout } from "@/contexts/workout-context";
-import type { ActiveExercise, ActiveSet } from "@/lib/types/workout";
+import type {
+  ActiveExercise,
+  ActiveSet,
+  WorkoutSessionCompleteReq,
+} from "@/lib/types/workout";
+import type { RoutineItemRes } from "@/lib/types/routine";
 import {
   Check,
   ChevronRight,
@@ -37,6 +42,9 @@ export default function WorkoutSessionScreen() {
   const [routineTitle, setRoutineTitle] = useState("");
   const [loading, setLoading] = useState(true);
   const [completing, setCompleting] = useState(false);
+  const [originalRoutineItems, setOriginalRoutineItems] = useState<
+    RoutineItemRes[] | null
+  >(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const setIdCounter = useRef(0);
   const initRef = useRef(false);
@@ -60,6 +68,7 @@ export default function WorkoutSessionScreen() {
           const routine = await routineApi.getRoutineDetail(Number(routineId));
           setRoutineTitle(routine.title);
           setSessionId(activeSession.sessionId);
+          setOriginalRoutineItems(routine.routineItems);
 
           const sorted = [...routine.routineItems].sort(
             (a, b) => a.orderInRoutine - b.orderInRoutine,
@@ -88,6 +97,7 @@ export default function WorkoutSessionScreen() {
 
           setRoutineTitle(routine.title);
           setSessionId(session.id);
+          setOriginalRoutineItems(routine.routineItems);
           startWorkout(session.id, Number(routineId));
 
           const sorted = [...routine.routineItems].sort(
@@ -186,6 +196,50 @@ export default function WorkoutSessionScreen() {
     );
   }, []);
 
+  const hasRoutineChanged = useCallback(() => {
+    if (!originalRoutineItems) return false;
+
+    const sorted = [...originalRoutineItems].sort(
+      (a, b) => a.orderInRoutine - b.orderInRoutine,
+    );
+
+    if (sorted.length !== exercises.length) return true;
+
+    for (let i = 0; i < sorted.length; i++) {
+      const orig = sorted[i];
+      const curr = exercises[i];
+      if (orig.exerciseId !== curr.exerciseId) return true;
+      if (orig.sets !== curr.sets.length) return true;
+    }
+
+    return false;
+  }, [originalRoutineItems, exercises]);
+
+  const completeWithAction = async (
+    action: WorkoutSessionCompleteReq["action"],
+    completedSets: WorkoutSessionCompleteReq["sets"],
+  ) => {
+    if (!sessionId) return;
+    setCompleting(true);
+    try {
+      await workoutApi.completeSession(sessionId, {
+        action,
+        sets: completedSets,
+      });
+      endWorkout();
+      router.back();
+    } catch (err) {
+      Alert.alert(
+        "오류",
+        err instanceof Error
+          ? err.message
+          : "운동 완료 처리에 실패했습니다.",
+      );
+    } finally {
+      setCompleting(false);
+    }
+  };
+
   const handleComplete = () => {
     const completedSets = exercises.flatMap((ex) =>
       ex.sets
@@ -203,6 +257,35 @@ export default function WorkoutSessionScreen() {
       return;
     }
 
+    // If routine-based session and exercises changed, offer choices
+    if (originalRoutineItems && hasRoutineChanged()) {
+      Alert.alert(
+        "운동 구성이 변경됨",
+        "루틴과 다른 구성으로 운동했습니다. 어떻게 저장할까요?",
+        [
+          { text: "취소", style: "cancel" },
+          {
+            text: "이대로 저장",
+            onPress: () => completeWithAction("RECORD_ONLY", completedSets),
+          },
+          {
+            text: "자유 운동으로 저장",
+            onPress: () =>
+              completeWithAction("DETACH_AND_RECORD", completedSets),
+          },
+          {
+            text: "루틴도 업데이트",
+            onPress: () =>
+              completeWithAction(
+                "UPDATE_ROUTINE_AND_RECORD",
+                completedSets,
+              ),
+          },
+        ],
+      );
+      return;
+    }
+
     Alert.alert(
       "운동 완료",
       `${completedSets.length}개 세트를 기록합니다.`,
@@ -210,27 +293,7 @@ export default function WorkoutSessionScreen() {
         { text: "취소", style: "cancel" },
         {
           text: "완료",
-          onPress: async () => {
-            if (!sessionId) return;
-            setCompleting(true);
-            try {
-              await workoutApi.completeSession(sessionId, {
-                action: "RECORD_ONLY",
-                sets: completedSets,
-              });
-              endWorkout();
-              router.back();
-            } catch (err) {
-              Alert.alert(
-                "오류",
-                err instanceof Error
-                  ? err.message
-                  : "운동 완료 처리에 실패했습니다.",
-              );
-            } finally {
-              setCompleting(false);
-            }
-          },
+          onPress: () => completeWithAction("RECORD_ONLY", completedSets),
         },
       ],
     );

@@ -1,9 +1,11 @@
+export type Gender = "MALE" | "FEMALE" | "UNKNOWN";
+
 export interface SignupRequest {
   username: string;
   password: string;
   email: string;
   nickname: string;
-  gender: "MALE" | "FEMALE";
+  gender: Gender;
   height: number;
   weight: number;
 }
@@ -18,13 +20,22 @@ export interface UserResponse {
   username: string;
   email: string;
   nickname: string;
-  gender: "MALE" | "FEMALE";
+  gender: Gender;
   height: number;
   weight: number;
+  role: string;
+  createdAt: string;
 }
 
 export interface LoginResponse {
   userResponse: UserResponse;
   accessToken: string;
   refreshToken: string;
+}
+
+export interface UpdateProfileRequest {
+  nickname: string;
+  gender: Gender;
+  height: number;
+  weight: number;
 }

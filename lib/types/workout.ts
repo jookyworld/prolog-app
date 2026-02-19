@@ -60,8 +60,13 @@ export interface WorkoutSetCompleteReq {
 }
 
 export interface WorkoutSessionCompleteReq {
-  action: "RECORD_ONLY";
+  action:
+    | "RECORD_ONLY"
+    | "CREATE_ROUTINE_AND_RECORD"
+    | "DETACH_AND_RECORD"
+    | "UPDATE_ROUTINE_AND_RECORD";
   sets: WorkoutSetCompleteReq[];
+  routineTitle?: string;
 }
 
 // --- Active workout state types ---

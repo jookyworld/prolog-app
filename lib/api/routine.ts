@@ -22,6 +22,13 @@ export const routineApi = {
     });
   },
 
+  updateRoutine(id: number, req: RoutineCreateRequest): Promise<RoutineDetail> {
+    return apiFetch(`/api/routines/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(req),
+    });
+  },
+
   deleteRoutine(id: number): Promise<void> {
     return apiFetch(`/api/routines/${id}`, { method: "DELETE" });
   },
