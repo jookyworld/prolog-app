@@ -18,6 +18,7 @@ import {
   X,
 } from "lucide-react-native";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useFocusEffect } from "expo-router";
 import {
   ActivityIndicator,
   Alert,
@@ -48,90 +49,96 @@ export default function WorkoutSessionScreen() {
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const setIdCounter = useRef(0);
   const initRef = useRef(false);
+  const activeSessionRef = useRef(activeSession);
+  activeSessionRef.current = activeSession;
 
   const nextSetId = useCallback(() => {
     return `set-${++setIdCounter.current}`;
   }, []);
 
   // Initialize session
-  useEffect(() => {
-    if (!routineId || initRef.current) return;
-    initRef.current = true;
+  useFocusEffect(
+    useCallback(() => {
+      if (!routineId || initRef.current) return;
+      initRef.current = true;
 
-    const init = async () => {
-      try {
-        // If resuming an active session, use its sessionId
-        if (
-          activeSession &&
-          activeSession.routineId === Number(routineId)
-        ) {
-          const routine = await routineApi.getRoutineDetail(Number(routineId));
-          setRoutineTitle(routine.title);
-          setSessionId(activeSession.sessionId);
-          setOriginalRoutineItems(routine.routineItems);
+      const init = async () => {
+        try {
+          // If resuming an active session, use its sessionId
+          const currentSession = activeSessionRef.current;
+          if (
+            currentSession &&
+            currentSession.routineId === Number(routineId)
+          ) {
+            const routine = await routineApi.getRoutineDetail(Number(routineId));
+            setRoutineTitle(routine.title);
+            setSessionId(currentSession.sessionId);
+            setOriginalRoutineItems(routine.routineItems);
 
-          const sorted = [...routine.routineItems].sort(
-            (a, b) => a.orderInRoutine - b.orderInRoutine,
+            const sorted = [...routine.routineItems].sort(
+              (a, b) => a.orderInRoutine - b.orderInRoutine,
+            );
+
+            const activeExercises: ActiveExercise[] = sorted.map((item) => ({
+              id: String(item.routineItemId),
+              exerciseId: item.exerciseId,
+              name: item.exerciseName,
+              sets: Array.from({ length: item.sets }, (_, i) => ({
+                id: nextSetId(),
+                setNumber: i + 1,
+                weight: "",
+                reps: "",
+                completed: false,
+              })),
+            }));
+
+            setExercises(activeExercises);
+          } else {
+            // New session
+            const [routine, session] = await Promise.all([
+              routineApi.getRoutineDetail(Number(routineId)),
+              workoutApi.startSession(Number(routineId)),
+            ]);
+
+            setRoutineTitle(routine.title);
+            setSessionId(session.id);
+            setOriginalRoutineItems(routine.routineItems);
+            startWorkout(session.id, Number(routineId));
+
+            const sorted = [...routine.routineItems].sort(
+              (a, b) => a.orderInRoutine - b.orderInRoutine,
+            );
+
+            const activeExercises: ActiveExercise[] = sorted.map((item) => ({
+              id: String(item.routineItemId),
+              exerciseId: item.exerciseId,
+              name: item.exerciseName,
+              sets: Array.from({ length: item.sets }, (_, i) => ({
+                id: nextSetId(),
+                setNumber: i + 1,
+                weight: "",
+                reps: "",
+                completed: false,
+              })),
+            }));
+
+            setExercises(activeExercises);
+          }
+        } catch (err) {
+          Alert.alert(
+            "오류",
+            err instanceof Error ? err.message : "세션을 시작할 수 없습니다.",
+            [{ text: "확인", onPress: () => router.back() }],
           );
-
-          const activeExercises: ActiveExercise[] = sorted.map((item) => ({
-            id: String(item.routineItemId),
-            exerciseId: item.exerciseId,
-            name: item.exerciseName,
-            sets: Array.from({ length: item.sets }, (_, i) => ({
-              id: nextSetId(),
-              setNumber: i + 1,
-              weight: "",
-              reps: "",
-              completed: false,
-            })),
-          }));
-
-          setExercises(activeExercises);
-        } else {
-          // New session
-          const [routine, session] = await Promise.all([
-            routineApi.getRoutineDetail(Number(routineId)),
-            workoutApi.startSession(Number(routineId)),
-          ]);
-
-          setRoutineTitle(routine.title);
-          setSessionId(session.id);
-          setOriginalRoutineItems(routine.routineItems);
-          startWorkout(session.id, Number(routineId));
-
-          const sorted = [...routine.routineItems].sort(
-            (a, b) => a.orderInRoutine - b.orderInRoutine,
-          );
-
-          const activeExercises: ActiveExercise[] = sorted.map((item) => ({
-            id: String(item.routineItemId),
-            exerciseId: item.exerciseId,
-            name: item.exerciseName,
-            sets: Array.from({ length: item.sets }, (_, i) => ({
-              id: nextSetId(),
-              setNumber: i + 1,
-              weight: "",
-              reps: "",
-              completed: false,
-            })),
-          }));
-
-          setExercises(activeExercises);
+        } finally {
+          setLoading(false);
         }
-      } catch (err) {
-        Alert.alert(
-          "오류",
-          err instanceof Error ? err.message : "세션을 시작할 수 없습니다.",
-          [{ text: "확인", onPress: () => router.back() }],
-        );
-      } finally {
-        setLoading(false);
-      }
-    };
+      };
 
-    init();
-  }, [routineId, router, activeSession, startWorkout, nextSetId]);
+      init();
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [routineId, router, startWorkout, nextSetId]),
+  );
 
   // Timer
   useEffect(() => {
@@ -227,6 +234,9 @@ export default function WorkoutSessionScreen() {
         sets: completedSets,
       });
       endWorkout();
+      initRef.current = false;
+      setLoading(true);
+      setElapsedTime(0);
       router.back();
     } catch (err) {
       Alert.alert(
@@ -314,6 +324,9 @@ export default function WorkoutSessionScreen() {
             }
           }
           endWorkout();
+          initRef.current = false;
+          setLoading(true);
+          setElapsedTime(0);
           router.back();
         },
       },
