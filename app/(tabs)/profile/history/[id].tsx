@@ -5,9 +5,9 @@ import {
   WorkoutSessionDetail,
   toWorkoutSessionDetail,
 } from "@/lib/types/workout";
-import { ArrowLeft, Calendar, Clock, Flame, Layers } from "lucide-react-native";
+import { ArrowLeft, Calendar, Clock, Flame, Layers, Trash2 } from "lucide-react-native";
 import { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, Pressable, ScrollView, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 
@@ -38,6 +38,34 @@ export default function WorkoutHistoryDetailScreen() {
   useEffect(() => {
     fetchDetail();
   }, [fetchDetail]);
+
+  const handleDelete = () => {
+    if (!id) return;
+    Alert.alert(
+      "기록 삭제",
+      "이 운동 기록을 삭제하시겠습니까?\n삭제 후 복구할 수 없습니다.",
+      [
+        { text: "취소", style: "cancel" },
+        {
+          text: "삭제",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await workoutApi.deleteSession(Number(id));
+              router.back();
+            } catch (err) {
+              Alert.alert(
+                "오류",
+                err instanceof Error
+                  ? err.message
+                  : "삭제에 실패했습니다.",
+              );
+            }
+          },
+        },
+      ],
+    );
+  };
 
   if (loading) {
     return (
@@ -78,14 +106,22 @@ export default function WorkoutHistoryDetailScreen() {
   return (
     <SafeAreaView className="flex-1 bg-background" edges={["top"]}>
       {/* 헤더 */}
-      <View className="flex-row items-center px-5 py-4">
+      <View className="flex-row items-center justify-between px-5 py-4">
+        <View className="flex-row items-center">
+          <Pressable
+            onPress={() => router.back()}
+            className="mr-3 h-10 w-10 items-center justify-center rounded-xl bg-white/5"
+          >
+            <ArrowLeft size={20} color={COLORS.white} />
+          </Pressable>
+          <Text className="text-2xl font-bold text-white">기록 상세</Text>
+        </View>
         <Pressable
-          onPress={() => router.back()}
-          className="mr-3 h-10 w-10 items-center justify-center rounded-xl bg-white/5"
+          onPress={handleDelete}
+          className="h-10 w-10 items-center justify-center rounded-xl bg-white/5 active:opacity-80"
         >
-          <ArrowLeft size={20} color={COLORS.white} />
+          <Trash2 size={18} color={COLORS.destructive} />
         </Pressable>
-        <Text className="text-2xl font-bold text-white">기록 상세</Text>
       </View>
 
       <ScrollView className="flex-1 px-5" showsVerticalScrollIndicator={false}>

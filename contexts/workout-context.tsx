@@ -2,12 +2,12 @@ import { createContext, useCallback, useContext, useState } from "react";
 
 interface ActiveSession {
   sessionId: number;
-  routineId: number;
+  routineId: number | null;
 }
 
 interface WorkoutContextValue {
   activeSession: ActiveSession | null;
-  startWorkout: (sessionId: number, routineId: number) => void;
+  startWorkout: (sessionId: number, routineId: number | null) => void;
   endWorkout: () => void;
 }
 
@@ -18,7 +18,7 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
     null,
   );
 
-  const startWorkout = useCallback((sessionId: number, routineId: number) => {
+  const startWorkout = useCallback((sessionId: number, routineId: number | null) => {
     setActiveSession({ sessionId, routineId });
   }, []);
 

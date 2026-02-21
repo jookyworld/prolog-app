@@ -89,10 +89,11 @@ export async function apiFetch<T>(
   ) {
     try {
       if (!refreshPromise) {
-        refreshPromise = refreshAccessToken();
+        refreshPromise = refreshAccessToken().finally(() => {
+          refreshPromise = null;
+        });
       }
       await refreshPromise;
-      refreshPromise = null;
 
       const newAccessToken = await getAccessToken();
       const retryHeaders: HeadersInit = {
@@ -118,7 +119,6 @@ export async function apiFetch<T>(
       if (retryRes.status === 204) return undefined as T;
       return retryRes.json();
     } catch {
-      refreshPromise = null;
       throw new ApiError(401, "인증이 만료되었습니다. 다시 로그인해주세요.");
     }
   }

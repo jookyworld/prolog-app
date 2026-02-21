@@ -3,6 +3,7 @@ import { workoutApi } from "@/lib/api/workout";
 import { COLORS } from "@/lib/constants";
 import { formatElapsedTime } from "@/lib/format";
 import { useWorkout } from "@/contexts/workout-context";
+import { getSelectedExercises } from "@/lib/store/exercise-selection";
 import type {
   ActiveExercise,
   ActiveSet,
@@ -12,10 +13,12 @@ import type { RoutineItemRes } from "@/lib/types/routine";
 import {
   Check,
   ChevronRight,
+  ChevronDown,
+  ChevronUp,
   Clock,
   Minus,
   Plus,
-  X,
+  Trash2,
 } from "lucide-react-native";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useFocusEffect } from "expo-router";
@@ -35,6 +38,9 @@ export default function WorkoutSessionScreen() {
   const router = useRouter();
   const { routineId } = useLocalSearchParams<{ routineId: string }>();
   const { activeSession, startWorkout, endWorkout } = useWorkout();
+
+  const isFreeWorkout = routineId === "free";
+  const numericRoutineId = isFreeWorkout ? null : Number(routineId);
 
   const [exercises, setExercises] = useState<ActiveExercise[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -56,6 +62,36 @@ export default function WorkoutSessionScreen() {
     return `set-${++setIdCounter.current}`;
   }, []);
 
+  // Pick up exercises added via select-exercises screen (for free workouts)
+  useFocusEffect(
+    useCallback(() => {
+      if (!initRef.current) return;
+      const added = getSelectedExercises();
+      if (added.length === 0) return;
+
+      const newExercises: ActiveExercise[] = added.map((ex) => ({
+        id: `ex-${ex.id}-${Date.now()}`,
+        exerciseId: ex.id,
+        name: ex.name,
+        sets: Array.from({ length: 3 }, (_, i) => ({
+          id: nextSetId(),
+          setNumber: i + 1,
+          weight: "",
+          reps: "",
+          completed: false,
+        })),
+      }));
+
+      setExercises((prev) => {
+        const updated = [...prev, ...newExercises];
+        // Move to first newly added exercise
+        setCurrentIndex(prev.length);
+        return updated;
+      });
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [nextSetId]),
+  );
+
   // Initialize session
   useFocusEffect(
     useCallback(() => {
@@ -64,13 +100,29 @@ export default function WorkoutSessionScreen() {
 
       const init = async () => {
         try {
-          // If resuming an active session, use its sessionId
           const currentSession = activeSessionRef.current;
-          if (
+
+          if (isFreeWorkout) {
+            // Free workout
+            if (currentSession && currentSession.routineId === null) {
+              // Resume existing free session
+              setSessionId(currentSession.sessionId);
+              setRoutineTitle("자유 운동");
+              setExercises([]);
+            } else {
+              // Start new free session
+              const session = await workoutApi.startSession(null);
+              setSessionId(session.id);
+              setRoutineTitle("자유 운동");
+              setExercises([]);
+              startWorkout(session.id, null);
+            }
+          } else if (
             currentSession &&
-            currentSession.routineId === Number(routineId)
+            currentSession.routineId === numericRoutineId
           ) {
-            const routine = await routineApi.getRoutineDetail(Number(routineId));
+            // Resume existing routine session
+            const routine = await routineApi.getRoutineDetail(numericRoutineId!);
             setRoutineTitle(routine.title);
             setSessionId(currentSession.sessionId);
             setOriginalRoutineItems(routine.routineItems);
@@ -94,16 +146,16 @@ export default function WorkoutSessionScreen() {
 
             setExercises(activeExercises);
           } else {
-            // New session
+            // New routine session
             const [routine, session] = await Promise.all([
-              routineApi.getRoutineDetail(Number(routineId)),
-              workoutApi.startSession(Number(routineId)),
+              routineApi.getRoutineDetail(numericRoutineId!),
+              workoutApi.startSession(numericRoutineId),
             ]);
 
             setRoutineTitle(routine.title);
             setSessionId(session.id);
             setOriginalRoutineItems(routine.routineItems);
-            startWorkout(session.id, Number(routineId));
+            startWorkout(session.id, numericRoutineId);
 
             const sorted = [...routine.routineItems].sort(
               (a, b) => a.orderInRoutine - b.orderInRoutine,
@@ -191,7 +243,7 @@ export default function WorkoutSessionScreen() {
           : ex,
       ),
     );
-  }, []);
+  }, [nextSetId]);
 
   const removeSet = useCallback((exerciseIdx: number) => {
     setExercises((prev) =>
@@ -201,6 +253,47 @@ export default function WorkoutSessionScreen() {
         return { ...ex, sets: newSets };
       }),
     );
+  }, []);
+
+  const removeExercise = useCallback((exerciseIdx: number) => {
+    setExercises((prev) => {
+      const updated = prev.filter((_, i) => i !== exerciseIdx);
+      // Adjust current index if needed
+      if (currentIndex >= updated.length && updated.length > 0) {
+        setCurrentIndex(updated.length - 1);
+      } else if (currentIndex === exerciseIdx && currentIndex > 0) {
+        setCurrentIndex(currentIndex - 1);
+      } else if (updated.length > 0 && currentIndex >= updated.length) {
+        setCurrentIndex(0);
+      }
+      return updated;
+    });
+  }, [currentIndex]);
+
+  const moveExerciseUp = useCallback((exerciseIdx: number) => {
+    if (exerciseIdx === 0) return;
+    setExercises((prev) => {
+      const updated = [...prev];
+      [updated[exerciseIdx - 1], updated[exerciseIdx]] = [
+        updated[exerciseIdx],
+        updated[exerciseIdx - 1],
+      ];
+      setCurrentIndex(exerciseIdx - 1);
+      return updated;
+    });
+  }, []);
+
+  const moveExerciseDown = useCallback((exerciseIdx: number) => {
+    setExercises((prev) => {
+      if (exerciseIdx >= prev.length - 1) return prev;
+      const updated = [...prev];
+      [updated[exerciseIdx], updated[exerciseIdx + 1]] = [
+        updated[exerciseIdx + 1],
+        updated[exerciseIdx],
+      ];
+      setCurrentIndex(exerciseIdx + 1);
+      return updated;
+    });
   }, []);
 
   const hasRoutineChanged = useCallback(() => {
@@ -225,6 +318,7 @@ export default function WorkoutSessionScreen() {
   const completeWithAction = async (
     action: WorkoutSessionCompleteReq["action"],
     completedSets: WorkoutSessionCompleteReq["sets"],
+    newRoutineTitle?: string,
   ) => {
     if (!sessionId) return;
     setCompleting(true);
@@ -232,6 +326,7 @@ export default function WorkoutSessionScreen() {
       await workoutApi.completeSession(sessionId, {
         action,
         sets: completedSets,
+        ...(newRoutineTitle ? { routineTitle: newRoutineTitle } : {}),
       });
       endWorkout();
       initRef.current = false;
@@ -250,14 +345,44 @@ export default function WorkoutSessionScreen() {
     }
   };
 
+  const promptRoutineTitleAndCreate = (
+    completedSets: WorkoutSessionCompleteReq["sets"],
+  ) => {
+    Alert.prompt(
+      "루틴 이름 입력",
+      "이 운동을 루틴으로 저장합니다.",
+      [
+        { text: "취소", style: "cancel" },
+        {
+          text: "저장",
+          onPress: (title: string | undefined) => {
+            const trimmed = (title ?? "").trim();
+            if (!trimmed) {
+              Alert.alert("알림", "루틴 이름을 입력해주세요.");
+              return;
+            }
+            completeWithAction(
+              "CREATE_ROUTINE_AND_RECORD",
+              completedSets,
+              trimmed,
+            );
+          },
+        },
+      ],
+      "plain-text",
+      "",
+      "default",
+    );
+  };
+
   const handleComplete = () => {
     const completedSets = exercises.flatMap((ex) =>
       ex.sets
-        .filter((s) => s.completed && s.weight && s.reps)
+        .filter((s) => s.completed && s.reps) // Only require reps (weight can be 0 for bodyweight exercises)
         .map((s) => ({
           exerciseId: ex.exerciseId,
           setNumber: s.setNumber,
-          weight: Number(s.weight),
+          weight: s.weight ? Number(s.weight) : 0, // Default to 0 for bodyweight exercises
           reps: Number(s.reps),
         })),
     );
@@ -267,7 +392,27 @@ export default function WorkoutSessionScreen() {
       return;
     }
 
-    // If routine-based session and exercises changed, offer choices
+    if (isFreeWorkout) {
+      // Free workout: offer to record only or create a routine
+      Alert.alert(
+        "운동 완료",
+        `${completedSets.length}개 세트를 기록합니다.`,
+        [
+          { text: "취소", style: "cancel" },
+          {
+            text: "기록만 저장",
+            onPress: () => completeWithAction("RECORD_ONLY", completedSets),
+          },
+          {
+            text: "루틴으로 저장",
+            onPress: () => promptRoutineTitleAndCreate(completedSets),
+          },
+        ],
+      );
+      return;
+    }
+
+    // Routine-based session with changes
     if (originalRoutineItems && hasRoutineChanged()) {
       Alert.alert(
         "운동 구성이 변경됨",
@@ -333,6 +478,48 @@ export default function WorkoutSessionScreen() {
     ]);
   };
 
+  const handleAddExercise = () => {
+    const rid = isFreeWorkout ? "free" : routineId;
+    router.push(`/(tabs)/routine/select-exercises?returnTo=workout&routineId=${rid}`);
+  };
+
+  const handleExerciseLongPress = (exerciseIdx: number, exerciseName: string) => {
+    const options = [
+      { text: "취소", style: "cancel" as const },
+    ];
+
+    if (exerciseIdx > 0) {
+      options.push({
+        text: "위로 이동",
+        onPress: () => moveExerciseUp(exerciseIdx),
+      });
+    }
+
+    if (exerciseIdx < exercises.length - 1) {
+      options.push({
+        text: "아래로 이동",
+        onPress: () => moveExerciseDown(exerciseIdx),
+      });
+    }
+
+    options.push({
+      text: "삭제",
+      style: "destructive" as const,
+      onPress: () => {
+        Alert.alert(
+          "종목 삭제",
+          `${exerciseName}을(를) 삭제하시겠습니까?`,
+          [
+            { text: "취소", style: "cancel" },
+            { text: "삭제", style: "destructive", onPress: () => removeExercise(exerciseIdx) },
+          ],
+        );
+      },
+    });
+
+    Alert.alert("종목 관리", exerciseName, options);
+  };
+
   if (loading) {
     return (
       <SafeAreaView className="flex-1 items-center justify-center bg-background">
@@ -377,6 +564,7 @@ export default function WorkoutSessionScreen() {
           <Pressable
             key={ex.id}
             onPress={() => setCurrentIndex(idx)}
+            onLongPress={() => handleExerciseLongPress(idx, ex.name)}
             className={`rounded-full px-4 py-2 ${
               idx === currentIndex ? "bg-primary" : "bg-white/5"
             }`}
@@ -391,17 +579,83 @@ export default function WorkoutSessionScreen() {
             </Text>
           </Pressable>
         ))}
+        {/* Add exercise button */}
+        <Pressable
+          onPress={handleAddExercise}
+          className="rounded-full bg-white/5 px-4 py-2"
+        >
+          <Text className="text-sm font-medium text-primary">+ 종목</Text>
+        </Pressable>
       </ScrollView>
 
       {/* Exercise content */}
-      {currentExercise && (
+      {exercises.length === 0 ? (
+        <View className="flex-1 items-center justify-center px-6">
+          <Text className="mb-2 text-lg font-semibold text-white/60">
+            종목을 추가해주세요
+          </Text>
+          <Text className="mb-6 text-sm text-white/40">
+            상단의 + 종목 버튼을 눌러 운동을 추가하세요
+          </Text>
+          <Pressable
+            onPress={handleAddExercise}
+            className="rounded-xl bg-primary px-6 py-3 active:opacity-80"
+          >
+            <Text className="text-base font-semibold text-white">
+              종목 추가하기
+            </Text>
+          </Pressable>
+        </View>
+      ) : currentExercise ? (
         <ScrollView
           className="flex-1 px-5 pt-4"
           showsVerticalScrollIndicator={false}
         >
-          <Text className="mb-4 text-xl font-bold text-white">
-            {currentExercise.name}
-          </Text>
+          {/* Exercise title with controls */}
+          <View className="mb-4 flex-row items-center justify-between">
+            <Text className="flex-1 text-xl font-bold text-white">
+              {currentExercise.name}
+            </Text>
+            <View className="flex-row gap-1">
+              {exercises.length > 1 && currentIndex > 0 && (
+                <Pressable
+                  onPress={() => moveExerciseUp(currentIndex)}
+                  className="h-8 w-8 items-center justify-center rounded-lg bg-white/5 active:opacity-80"
+                >
+                  <ChevronUp size={16} color={COLORS.mutedForeground} />
+                </Pressable>
+              )}
+              {exercises.length > 1 && currentIndex < exercises.length - 1 && (
+                <Pressable
+                  onPress={() => moveExerciseDown(currentIndex)}
+                  className="h-8 w-8 items-center justify-center rounded-lg bg-white/5 active:opacity-80"
+                >
+                  <ChevronDown size={16} color={COLORS.mutedForeground} />
+                </Pressable>
+              )}
+              {exercises.length > 1 && (
+                <Pressable
+                  onPress={() =>
+                    Alert.alert(
+                      "종목 삭제",
+                      `${currentExercise.name}을(를) 삭제하시겠습니까?`,
+                      [
+                        { text: "취소", style: "cancel" },
+                        {
+                          text: "삭제",
+                          style: "destructive",
+                          onPress: () => removeExercise(currentIndex),
+                        },
+                      ],
+                    )
+                  }
+                  className="h-8 w-8 items-center justify-center rounded-lg bg-white/5 active:opacity-80"
+                >
+                  <Trash2 size={14} color={COLORS.destructive} />
+                </Pressable>
+              )}
+            </View>
+          </View>
 
           {/* Set table header */}
           <View className="mb-2 flex-row items-center px-1">
@@ -503,7 +757,7 @@ export default function WorkoutSessionScreen() {
             </Pressable>
           )}
         </ScrollView>
-      )}
+      ) : null}
 
       {/* Bottom timer bar */}
       <View className="flex-row items-center justify-center gap-2 border-t border-white/10 px-5 py-3">

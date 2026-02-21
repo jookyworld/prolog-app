@@ -83,6 +83,11 @@ export default function WorkoutStartSheet({
     router.push(`/(tabs)/workout/session?routineId=${id}`);
   };
 
+  const handleStartFreeWorkout = () => {
+    onClose();
+    router.push("/(tabs)/workout/session?routineId=free");
+  };
+
   return (
     <Modal
       visible={visible}
@@ -140,6 +145,24 @@ export default function WorkoutStartSheet({
           contentContainerStyle={{ paddingBottom: 40 }}
           showsVerticalScrollIndicator={false}
         >
+          {/* 자유 운동 시작 */}
+          <Pressable
+            onPress={handleStartFreeWorkout}
+            className="mb-4 flex-row items-center gap-4 rounded-2xl bg-background p-4 active:opacity-80"
+          >
+            <View className="h-12 w-12 items-center justify-center rounded-xl bg-white/10">
+              <Dumbbell size={22} color={COLORS.mutedForeground} />
+            </View>
+            <View className="flex-1">
+              <Text className="mb-0.5 text-base font-bold text-white">
+                자유 운동
+              </Text>
+              <Text className="text-sm text-white/50">
+                루틴 없이 자유롭게 운동하기
+              </Text>
+            </View>
+          </Pressable>
+
           {loading ? (
             <View className="items-center py-10">
               <ActivityIndicator size="small" color={COLORS.primary} />

@@ -1,20 +1,27 @@
 import CustomTabBar from "@/components/CustomTabBar";
 import WorkoutStartSheet from "@/components/WorkoutStartSheet";
 import { useWorkout } from "@/contexts/workout-context";
-import { Tabs, useRouter } from "expo-router";
+import { Tabs, useRouter, usePathname } from "expo-router";
 import { Home, LayoutGrid, User, Users } from "lucide-react-native";
 import { useState } from "react";
 
 export default function TabsLayout() {
   const router = useRouter();
+  const pathname = usePathname();
   const { activeSession } = useWorkout();
   const [sheetVisible, setSheetVisible] = useState(false);
 
   const handlePressFAB = () => {
     if (activeSession) {
-      router.push(
-        `/(tabs)/workout/session?routineId=${activeSession.routineId}`,
-      );
+      const rid = activeSession.routineId ?? "free";
+      const targetPath = `/(tabs)/workout/session`;
+
+      // If already on workout session screen, don't push again
+      if (pathname.includes('/workout/session')) {
+        return;
+      }
+
+      router.push(`${targetPath}?routineId=${rid}`);
     } else {
       setSheetVisible(true);
     }

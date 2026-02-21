@@ -15,10 +15,16 @@ export const workoutApi = {
     return apiFetch(`/api/workouts/sessions/${id}`);
   },
 
-  startSession(routineId: number): Promise<WorkoutSessionStartRes> {
+  startSession(routineId?: number | null): Promise<WorkoutSessionStartRes> {
     return apiFetch("/api/workouts/sessions", {
       method: "POST",
-      body: JSON.stringify({ routineId }),
+      body: JSON.stringify({ routineId: routineId ?? null }),
+    });
+  },
+
+  deleteSession(sessionId: number): Promise<void> {
+    return apiFetch(`/api/workouts/sessions/${sessionId}`, {
+      method: "DELETE",
     });
   },
 
