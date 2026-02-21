@@ -43,4 +43,8 @@ export const workoutApi = {
       method: "DELETE",
     });
   },
+
+  getLastSessionByRoutine(routineId: number): Promise<WorkoutSessionDetailRes> {
+    return apiFetch(`/api/workouts/sessions/routines/${routineId}/last`);
+  },
 };

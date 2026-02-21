@@ -127,22 +127,44 @@ export default function WorkoutSessionScreen() {
             setSessionId(currentSession.sessionId);
             setOriginalRoutineItems(routine.routineItems);
 
+            // Load last session data for pre-filling
+            let lastDataMap = new Map<number, { weight: number; reps: number }[]>();
+            try {
+              const lastSession = await workoutApi.getLastSessionByRoutine(
+                numericRoutineId!,
+              );
+              lastSession.exercises.forEach((ex) => {
+                lastDataMap.set(
+                  ex.exerciseId,
+                  ex.sets.map((s) => ({ weight: s.weight, reps: s.reps })),
+                );
+              });
+            } catch {
+              // No previous session, ignore
+            }
+
             const sorted = [...routine.routineItems].sort(
               (a, b) => a.orderInRoutine - b.orderInRoutine,
             );
 
-            const activeExercises: ActiveExercise[] = sorted.map((item) => ({
-              id: String(item.routineItemId),
-              exerciseId: item.exerciseId,
-              name: item.exerciseName,
-              sets: Array.from({ length: item.sets }, (_, i) => ({
-                id: nextSetId(),
-                setNumber: i + 1,
-                weight: "",
-                reps: "",
-                completed: false,
-              })),
-            }));
+            const activeExercises: ActiveExercise[] = sorted.map((item) => {
+              const lastSets = lastDataMap.get(item.exerciseId) || [];
+              return {
+                id: String(item.routineItemId),
+                exerciseId: item.exerciseId,
+                name: item.exerciseName,
+                sets: Array.from({ length: item.sets }, (_, i) => {
+                  const lastSet = lastSets[i];
+                  return {
+                    id: nextSetId(),
+                    setNumber: i + 1,
+                    weight: lastSet ? String(lastSet.weight) : "",
+                    reps: lastSet ? String(lastSet.reps) : "",
+                    completed: false,
+                  };
+                }),
+              };
+            });
 
             setExercises(activeExercises);
           } else {
@@ -157,22 +179,44 @@ export default function WorkoutSessionScreen() {
             setOriginalRoutineItems(routine.routineItems);
             startWorkout(session.id, numericRoutineId);
 
+            // Load last session data for pre-filling
+            let lastDataMap = new Map<number, { weight: number; reps: number }[]>();
+            try {
+              const lastSession = await workoutApi.getLastSessionByRoutine(
+                numericRoutineId!,
+              );
+              lastSession.exercises.forEach((ex) => {
+                lastDataMap.set(
+                  ex.exerciseId,
+                  ex.sets.map((s) => ({ weight: s.weight, reps: s.reps })),
+                );
+              });
+            } catch {
+              // No previous session, ignore
+            }
+
             const sorted = [...routine.routineItems].sort(
               (a, b) => a.orderInRoutine - b.orderInRoutine,
             );
 
-            const activeExercises: ActiveExercise[] = sorted.map((item) => ({
-              id: String(item.routineItemId),
-              exerciseId: item.exerciseId,
-              name: item.exerciseName,
-              sets: Array.from({ length: item.sets }, (_, i) => ({
-                id: nextSetId(),
-                setNumber: i + 1,
-                weight: "",
-                reps: "",
-                completed: false,
-              })),
-            }));
+            const activeExercises: ActiveExercise[] = sorted.map((item) => {
+              const lastSets = lastDataMap.get(item.exerciseId) || [];
+              return {
+                id: String(item.routineItemId),
+                exerciseId: item.exerciseId,
+                name: item.exerciseName,
+                sets: Array.from({ length: item.sets }, (_, i) => {
+                  const lastSet = lastSets[i];
+                  return {
+                    id: nextSetId(),
+                    setNumber: i + 1,
+                    weight: lastSet ? String(lastSet.weight) : "",
+                    reps: lastSet ? String(lastSet.reps) : "",
+                    completed: false,
+                  };
+                }),
+              };
+            });
 
             setExercises(activeExercises);
           }
@@ -484,27 +528,25 @@ export default function WorkoutSessionScreen() {
   };
 
   const handleExerciseLongPress = (exerciseIdx: number, exerciseName: string) => {
-    const options = [
-      { text: "취소", style: "cancel" as const },
-    ];
+    const buttons: any[] = [];
 
     if (exerciseIdx > 0) {
-      options.push({
+      buttons.push({
         text: "위로 이동",
         onPress: () => moveExerciseUp(exerciseIdx),
       });
     }
 
     if (exerciseIdx < exercises.length - 1) {
-      options.push({
+      buttons.push({
         text: "아래로 이동",
         onPress: () => moveExerciseDown(exerciseIdx),
       });
     }
 
-    options.push({
+    buttons.push({
       text: "삭제",
-      style: "destructive" as const,
+      style: "destructive",
       onPress: () => {
         Alert.alert(
           "종목 삭제",
@@ -517,7 +559,9 @@ export default function WorkoutSessionScreen() {
       },
     });
 
-    Alert.alert("종목 관리", exerciseName, options);
+    buttons.push({ text: "취소", style: "cancel" });
+
+    Alert.alert("종목 관리", exerciseName, buttons);
   };
 
   if (loading) {
