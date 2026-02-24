@@ -45,22 +45,42 @@ let refreshPromise: Promise<void> | null = null;
 async function refreshAccessToken(): Promise<void> {
   const refreshToken = await getRefreshToken();
   if (!refreshToken) {
+    await clearTokens();
     throw new ApiError(401, "토큰 갱신에 실패했습니다.");
   }
 
   const res = await fetch(`${API_URL}/api/auth/refresh`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ refreshToken }),
+    headers: {
+      "Content-Type": "application/json",
+      // Send refresh token in Authorization header as fallback
+      "X-Refresh-Token": refreshToken,
+    },
+    credentials: "include", // Include cookies if backend uses them
   });
 
   if (!res.ok) {
     await clearTokens();
-    throw new ApiError(401, "토큰 갱신에 실패했습니다.");
+    let errorMsg = "토큰 갱신에 실패했습니다.";
+    try {
+      const errorData = await res.json();
+      errorMsg = errorData.message || errorMsg;
+    } catch {
+      // Ignore JSON parse error
+    }
+    throw new ApiError(401, errorMsg);
   }
 
   const data = await res.json();
-  await setTokens(data.accessToken, data.refreshToken);
+  if (data.accessToken) {
+    await setTokens(
+      data.accessToken,
+      data.refreshToken || refreshToken, // Keep old refresh token if not provided
+    );
+  } else {
+    await clearTokens();
+    throw new ApiError(401, "응답에 액세스 토큰이 없습니다.");
+  }
 }
 
 export async function apiFetch<T>(
@@ -80,6 +100,7 @@ export async function apiFetch<T>(
   const res = await fetch(url, {
     ...options,
     headers,
+    credentials: "include", // Always include credentials for cookie-based auth
   });
 
   if (
@@ -107,6 +128,7 @@ export async function apiFetch<T>(
       const retryRes = await fetch(`${API_URL}${path}`, {
         ...options,
         headers: retryHeaders,
+        credentials: "include",
       });
 
       if (!retryRes.ok) {
@@ -124,7 +146,14 @@ export async function apiFetch<T>(
   }
 
   if (!res.ok) {
-    throw new ApiError(res.status, `API 요청 실패 (${res.status})`);
+    let errorMessage = `API 요청 실패 (${res.status})`;
+    try {
+      const errorData = await res.json();
+      errorMessage = errorData.message || errorMessage;
+    } catch {
+      // JSON 파싱 실패 시 기본 메시지 사용
+    }
+    throw new ApiError(res.status, errorMessage);
   }
 
   if (res.status === 204) return undefined as T;
