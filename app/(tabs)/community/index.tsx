@@ -5,6 +5,7 @@ import type {
   SharedRoutineSortType,
 } from "@/lib/types/community";
 import { BODY_PART_LABEL, type BodyPart } from "@/lib/types/exercise";
+import { useRouter } from "expo-router";
 import {
   Clock,
   Download,
@@ -168,6 +169,7 @@ function RoutineCard({ routine, onImport, onPress }: RoutineCardProps) {
 }
 
 export default function CommunityScreen() {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<TabType>("all");
   const [sortType, setSortType] = useState<SharedRoutineSortType>("latest");
   const [routines, setRoutines] = useState<SharedRoutineListItem[]>([]);
@@ -223,8 +225,7 @@ export default function CommunityScreen() {
   };
 
   const handlePress = (id: number) => {
-    // TODO: 상세 화면 구현 예정
-    console.log("Routine clicked:", id);
+    router.push(`/(tabs)/community/${id}`);
   };
 
   // 로딩 상태
