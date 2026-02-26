@@ -54,7 +54,6 @@ export interface SharedRoutineListItem {
   viewCount: number;
   importCount: number;
   likeCount: number;
-  commentCount: number;
   isLiked: boolean; // 현재 사용자가 좋아요 했는지
 
   // 작성자 정보
@@ -74,20 +73,6 @@ export interface SharedRoutineDetail extends SharedRoutineListItem {
   lastSessionSnapshot?: SessionSnapshot;
 }
 
-// 댓글
-export interface Comment {
-  id: number;
-  content: string;
-  createdAt: string;
-
-  author: {
-    id: number;
-    username: string;
-    nickname: string;
-    profileImage?: string;
-  };
-}
-
 // API 요청/응답 타입
 export interface SharedRoutinesResponse {
   items: SharedRoutineListItem[];
@@ -97,18 +82,9 @@ export interface SharedRoutinesResponse {
   hasNext: boolean;
 }
 
-export interface CommentsResponse {
-  items: Comment[];
-  total: number;
-}
-
 export interface CreateSharedRoutineRequest {
   routineId: number;
   title: string;
-  content: string;
-}
-
-export interface CreateCommentRequest {
   content: string;
 }
 

@@ -1,9 +1,7 @@
 import type {
   SharedRoutinesResponse,
   SharedRoutineDetail,
-  CommentsResponse,
   CreateSharedRoutineRequest,
-  CreateCommentRequest,
   SharedRoutineSortType,
 } from "../types/community";
 
@@ -22,7 +20,6 @@ const MOCK_SHARED_ROUTINES: SharedRoutinesResponse = {
       viewCount: 234,
       importCount: 45,
       likeCount: 89,
-      commentCount: 12,
       isLiked: false,
       author: {
         id: 1,
@@ -42,7 +39,6 @@ const MOCK_SHARED_ROUTINES: SharedRoutinesResponse = {
       viewCount: 156,
       importCount: 32,
       likeCount: 67,
-      commentCount: 8,
       isLiked: true,
       author: {
         id: 2,
@@ -62,7 +58,6 @@ const MOCK_SHARED_ROUTINES: SharedRoutinesResponse = {
       viewCount: 189,
       importCount: 28,
       likeCount: 54,
-      commentCount: 6,
       isLiked: false,
       author: {
         id: 3,
@@ -227,50 +222,6 @@ export const communityApi = {
     }
 
     return { routineId: 999 }; // Mock: 새로 생성된 루틴 ID
-  },
-
-  // 댓글 목록 조회
-  getComments: async (sharedRoutineId: number): Promise<CommentsResponse> => {
-    // TODO: 실제 API 호출
-    // return apiClient.get(`/community/routines/${sharedRoutineId}/comments`);
-
-    await new Promise((resolve) => setTimeout(resolve, 300));
-
-    return {
-      items: [
-        {
-          id: 1,
-          content: "좋은 루틴이네요! 감사합니다",
-          createdAt: "2024-02-25T11:00:00Z",
-          author: {
-            id: 10,
-            username: "user123",
-            nickname: "운동러",
-            profileImage: undefined,
-          },
-        },
-      ],
-      total: 1,
-    };
-  },
-
-  // 댓글 작성
-  createComment: async (
-    sharedRoutineId: number,
-    data: CreateCommentRequest
-  ): Promise<void> => {
-    // TODO: 실제 API 호출
-    // return apiClient.post(`/community/routines/${sharedRoutineId}/comments`, data);
-
-    await new Promise((resolve) => setTimeout(resolve, 300));
-  },
-
-  // 댓글 삭제
-  deleteComment: async (commentId: number): Promise<void> => {
-    // TODO: 실제 API 호출
-    // return apiClient.delete(`/community/comments/${commentId}`);
-
-    await new Promise((resolve) => setTimeout(resolve, 300));
   },
 
   // 공유 루틴 생성

@@ -5,14 +5,12 @@ import type {
   SharedRoutineSortType,
 } from "@/lib/types/community";
 import { BODY_PART_LABEL, type BodyPart } from "@/lib/types/exercise";
-import { useRouter } from "expo-router";
 import {
   Clock,
   Download,
   Dumbbell,
   Eye,
   Heart,
-  MessageCircle,
 } from "lucide-react-native";
 import { useEffect, useState } from "react";
 import {
@@ -46,18 +44,17 @@ function getBodyPartLabels(bodyParts: BodyPart[]): string[] {
 
 interface RoutineCardProps {
   routine: SharedRoutineListItem;
-  onLike: (id: number) => void;
   onImport: (id: number) => void;
   onPress: (id: number) => void;
 }
 
-function RoutineCard({ routine, onLike, onImport, onPress }: RoutineCardProps) {
+function RoutineCard({ routine, onImport, onPress }: RoutineCardProps) {
   const bodyPartLabels = getBodyPartLabels(routine.bodyParts);
 
   return (
     <Pressable
       onPress={() => onPress(routine.id)}
-      className="rounded-2xl bg-card p-4 active:opacity-80"
+      className="rounded-2xl bg-card p-4"
     >
       {/* 작성자 정보 */}
       <View className="mb-3 flex-row items-center gap-3">
@@ -77,37 +74,53 @@ function RoutineCard({ routine, onLike, onImport, onPress }: RoutineCardProps) {
       </View>
 
       {/* 루틴 제목 */}
-      <Text className="mb-2 text-xl font-bold text-white">{routine.title}</Text>
+      <Text className="mb-1.5 text-lg font-bold text-white">{routine.title}</Text>
 
       {/* 한줄평 */}
-      <Text className="mb-3 text-sm text-white/60" numberOfLines={2}>
+      <Text className="mb-2.5 text-sm text-white/60" numberOfLines={2}>
         {routine.content}
       </Text>
 
-      {/* 운동 부위 뱃지 */}
-      <View className="mb-3 flex-row flex-wrap gap-2">
-        {bodyPartLabels.map((label) => (
-          <View key={label} className="rounded-full bg-primary/15 px-3 py-1">
+      {/* 운동 부위 뱃지 + 루틴 정보 (한 줄) */}
+      <View className="mb-3 flex-row items-center gap-2">
+        {/* 운동 부위 뱃지 */}
+        {bodyPartLabels.slice(0, 3).map((label) => (
+          <View
+            key={label}
+            className="rounded-full bg-primary/15 px-2.5 py-0.5"
+          >
             <Text className="text-xs font-semibold text-primary">{label}</Text>
           </View>
         ))}
-      </View>
+        {bodyPartLabels.length > 3 && (
+          <View className="rounded-full bg-primary/15 px-2.5 py-0.5">
+            <Text className="text-xs font-semibold text-primary">
+              +{bodyPartLabels.length - 3}
+            </Text>
+          </View>
+        )}
 
-      {/* 루틴 정보 */}
-      <View className="mb-3 flex-row items-center gap-4">
+        {/* 구분자 */}
+        <Text className="text-white/20">•</Text>
+
+        {/* 루틴 정보 */}
         <View className="flex-row items-center gap-1">
-          <Dumbbell size={14} color={COLORS.mutedForeground} />
+          <Dumbbell size={12} color={COLORS.mutedForeground} />
           <Text className="text-xs text-white/50">
             {routine.exerciseCount}종목
           </Text>
         </View>
+
         {routine.estimatedDuration && (
-          <View className="flex-row items-center gap-1">
-            <Clock size={14} color={COLORS.mutedForeground} />
-            <Text className="text-xs text-white/50">
-              약 {routine.estimatedDuration}분
-            </Text>
-          </View>
+          <>
+            <Text className="text-white/20">•</Text>
+            <View className="flex-row items-center gap-1">
+              <Clock size={12} color={COLORS.mutedForeground} />
+              <Text className="text-xs text-white/50">
+                {routine.estimatedDuration}분
+              </Text>
+            </View>
+          </>
         )}
       </View>
 
@@ -132,12 +145,6 @@ function RoutineCard({ routine, onLike, onImport, onPress }: RoutineCardProps) {
             </Text>
           </View>
           <View className="flex-row items-center gap-1">
-            <MessageCircle size={14} color={COLORS.mutedForeground} />
-            <Text className="text-xs text-white/40">
-              {formatNumber(routine.commentCount)}
-            </Text>
-          </View>
-          <View className="flex-row items-center gap-1">
             <Download size={14} color={COLORS.mutedForeground} />
             <Text className="text-xs text-white/40">
               {formatNumber(routine.importCount)}
@@ -146,37 +153,21 @@ function RoutineCard({ routine, onLike, onImport, onPress }: RoutineCardProps) {
         </View>
 
         {/* 액션 버튼 */}
-        <View className="flex-row items-center gap-2">
-          <Pressable
-            onPress={(e) => {
-              e.stopPropagation();
-              onLike(routine.id);
-            }}
-            className="rounded-lg bg-white/5 active:bg-white/10"
-          >
-            <Heart
-              size={18}
-              color={routine.isLiked ? COLORS.primary : COLORS.white}
-              fill={routine.isLiked ? COLORS.primary : "transparent"}
-            />
-          </Pressable>
-          <Pressable
-            onPress={(e) => {
-              e.stopPropagation();
-              onImport(routine.id);
-            }}
-            className="rounded-lg bg-primary px-3 py-1.5 active:opacity-80"
-          >
-            <Text className="text-xs font-semibold text-white">가져오기</Text>
-          </Pressable>
-        </View>
+        <Pressable
+          onPress={(e) => {
+            e.stopPropagation();
+            onImport(routine.id);
+          }}
+          className="rounded-lg bg-primary px-4 py-2 active:opacity-80"
+        >
+          <Text className="text-xs font-semibold text-white">가져오기</Text>
+        </Pressable>
       </View>
     </Pressable>
   );
 }
 
 export default function CommunityScreen() {
-  const router = useRouter();
   const [activeTab, setActiveTab] = useState<TabType>("all");
   const [sortType, setSortType] = useState<SharedRoutineSortType>("latest");
   const [routines, setRoutines] = useState<SharedRoutineListItem[]>([]);
@@ -213,34 +204,6 @@ export default function CommunityScreen() {
     setRefreshing(false);
   };
 
-  const handleLike = async (id: number) => {
-    const routine = routines.find((r) => r.id === id);
-    if (!routine) return;
-
-    try {
-      if (routine.isLiked) {
-        await communityApi.unlikeRoutine(id);
-      } else {
-        await communityApi.likeRoutine(id);
-      }
-
-      // 낙관적 업데이트
-      setRoutines((prev) =>
-        prev.map((r) =>
-          r.id === id
-            ? {
-                ...r,
-                isLiked: !r.isLiked,
-                likeCount: r.isLiked ? r.likeCount - 1 : r.likeCount + 1,
-              }
-            : r,
-        ),
-      );
-    } catch (err) {
-      console.error("Failed to toggle like:", err);
-    }
-  };
-
   const handleImport = async (id: number) => {
     try {
       const result = await communityApi.importRoutine(id);
@@ -260,8 +223,8 @@ export default function CommunityScreen() {
   };
 
   const handlePress = (id: number) => {
-    // TODO: 상세 화면으로 이동
-    router.push(`/(tabs)/community/${id}`);
+    // TODO: 상세 화면 구현 예정
+    console.log("Routine clicked:", id);
   };
 
   // 로딩 상태
@@ -381,7 +344,6 @@ export default function CommunityScreen() {
                 <RoutineCard
                   key={routine.id}
                   routine={routine}
-                  onLike={handleLike}
                   onImport={handleImport}
                   onPress={handlePress}
                 />
